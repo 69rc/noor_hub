@@ -205,6 +205,24 @@ in the background, or without an account.
 
 ---
 
+## Deploy (Vercel)
+
+The web app is a static Vite build and deploys to Vercel unchanged; the Express API is optional
+(accounts, sync and the learning assistant only).
+
+1. Import this repository on Vercel and set: framework preset **Vite**, build command
+   `npm run build -w apps/web`, output directory `apps/web/dist`, install command
+   `npm ci --legacy-peer-deps`.
+2. The root `vercel.json` rewrites unknown routes to `index.html`, so deep links such as
+   `/quran/2` resolve instead of 404ing.
+3. No environment variables are required: without `VITE_API_URL` the app runs in guest mode and
+   every local-first feature works. Point `VITE_API_URL` at an API hosted on an always-on server
+   (Railway, Render, Fly…) with Neon or Supabase Postgres to enable accounts and the assistant.
+4. The API is not serverless-ready as written — it expects a long-lived process and a direct
+   Postgres connection — so keep it off Vercel unless it is refactored into functions.
+
+---
+
 ## Security & privacy
 
 - Secrets live only in server environment variables; **no API keys ship to the frontend**.
