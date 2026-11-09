@@ -1,0 +1,922 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  EDITOR
+}
+enum Theme {
+  SYSTEM
+  LIGHT
+  DARK
+}
+enum AsrMethod {
+  STANDARD
+  HANAFI
+}
+enum Prayer {
+  FAJR
+  DHUHR
+  ASR
+  MAGHRIB
+  ISHA
+}
+enum PrayerStatus {
+  COMPLETED
+  MISSED
+  EXCUSED
+}
+enum LearningLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+enum ContentKind {
+  QURAN
+  TRANSLATION
+  TAFSIR
+  HADITH
+  COMMENTARY
+  LESSON
+  ARTICLE
+  ADHKAR
+}
+enum ReviewStatus {
+  DRAFT
+  REVIEWED
+  PUBLISHED
+  RETIRED
+}
+enum TextKind {
+  TRANSLATION
+  TRANSLITERATION
+  TAFSIR
+}
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  ABANDONED
+}
+enum Cadence {
+  DAILY
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+enum NotificationKind {
+  PRAYER
+  ADHAN
+  PRE_PRAYER
+  MORNING_ADHKAR
+  EVENING_ADHKAR
+  QURAN_GOAL
+  TAHAJJUD
+  LEARNING
+  CUSTOM
+}
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+enum SyncAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  email          String   @unique @db.VarChar(320)
+  passwordHash   String
+  displayName    String   @db.VarChar(80)
+  role           Role     @default(USER)
+  syncSequence   BigInt   @default(0)
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+  deletedAt      DateTime? @db.Timestamptz(3)
+  preferences    UserPreferences?
+  location       LocationPreference?
+  prayerSettings PrayerSettings?
+  sessions       AuthSession[]
+  challenges     AuthChallenge[]
+  prayerLogs     PrayerLog[]
+  bookmarks      QuranBookmark[]
+  notes          QuranNote[]
+  lastRead       LastRead?
+  memorizationPlans MemorizationPlan[]
+  hadithBookmarks HadithBookmark[]
+  readingHistory ReadingHistory[]
+  enrollments    Enrollment[]
+  lessonProgress LessonProgress[]
+  quizAttempts   QuizAttempt[]
+  dhikrCollections PersonalDhikrCollection[]
+  dhikrSessions  DhikrSession[]
+  tahajjudGoals  TahajjudGoal?
+  tahajjudRecords TahajjudRecord[]
+  notificationPreferences NotificationPreference[]
+  pushSubscriptions PushSubscription[]
+  deliveries     NotificationDelivery[]
+  goals          WorshipGoal[]
+  journalEntries JournalEntry[]
+  conversations  AIConversation[]
+  aiRequests     AIRequest[]
+  syncOperations SyncOperation[]
+}
+
+model UserPreferences {
+  userId         String @id @db.Uuid
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locale         String @default("en") @db.VarChar(12)
+  theme          Theme @default(SYSTEM)
+  arabicFont     String @default("amiri") @db.VarChar(40)
+  translationId  String @default("en.sahih") @db.VarChar(60)
+  reciterId      String @default("ar.alafasy") @db.VarChar(60)
+  learningLevel  LearningLevel @default(BEGINNER)
+  dashboardWidgets Json @default("[\"prayer\",\"quran\",\"dhikr\",\"learning\",\"hadith\",\"verse\",\"tahajjud\"]")
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model LocationPreference {
+  userId       String @id @db.Uuid
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label        String @db.VarChar(120)
+  country      String @db.Char(2)
+  latitude     Decimal? @db.Decimal(9, 6)
+  longitude    Decimal? @db.Decimal(9, 6)
+  timezone     String @db.VarChar(60)
+  consentedAt  DateTime? @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model PrayerSettings {
+  userId       String @id @db.Uuid
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method       String @default("MWL") @db.VarChar(30)
+  asrMethod    AsrMethod @default(STANDARD)
+  offsets      Json @default("{}")
+  reminders    Boolean @default(false)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model AuthSession {
+  id          String @id @default(uuid()) @db.Uuid
+  userId      String @db.Uuid
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceLabel String @db.VarChar(160)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  expiresAt   DateTime @db.Timestamptz(3)
+  revokedAt   DateTime? @db.Timestamptz(3)
+  tokens      RefreshToken[]
+  @@index([userId, revokedAt])
+}
+
+model RefreshToken {
+  id           String @id @default(uuid()) @db.Uuid
+  sessionId    String @db.Uuid
+  session      AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tokenHash    String @unique @db.Char(64)
+  expiresAt    DateTime @db.Timestamptz(3)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  revokedAt    DateTime? @db.Timestamptz(3)
+  replacedById String? @unique @db.Uuid
+  replacedBy   RefreshToken? @relation("TokenRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replacement  RefreshToken? @relation("TokenRotation")
+  @@index([sessionId, expiresAt])
+}
+
+model AuthChallenge {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   String @db.VarChar(40)
+  tokenHash String @unique @db.Char(64)
+  expiresAt DateTime @db.Timestamptz(3)
+  consumedAt DateTime? @db.Timestamptz(3)
+  @@index([userId, purpose])
+}
+
+model ContentSource {
+  id           String @id @default(uuid()) @db.Uuid
+  slug         String @unique @db.VarChar(100)
+  publisher    String @db.VarChar(160)
+  canonicalUrl String
+  license      String
+  attribution  String
+  kind         ContentKind
+  versions     ContentVersion[]
+}
+
+model ContentVersion {
+  id           String @id @default(uuid()) @db.Uuid
+  sourceId     String @db.Uuid
+  source       ContentSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  version      String @db.VarChar(60)
+  checksum     String @db.Char(64)
+  reviewStatus ReviewStatus @default(DRAFT)
+  reviewedBy   String? @db.Uuid
+  publishedAt  DateTime? @db.Timestamptz(3)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  chunks       SourceChunk[]
+  surahs       Surah[]
+  ayahs        Ayah[]
+  ayahTexts    AyahText[]
+  words        QuranWord[]
+  hadith       Hadith[]
+  translations HadithTranslation[]
+  gradings     HadithGrading[]
+  commentaries HadithCommentary[]
+  lessons      Lesson[]
+  articles     Article[]
+  dhikr        Dhikr[]
+  @@unique([sourceId, version])
+}
+
+model SourceChunk {
+  id         String @id @default(uuid()) @db.Uuid
+  versionId  String @db.Uuid
+  version    ContentVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  locator    String @db.VarChar(160)
+  ordinal    Int
+  text       String
+  citations  AICitation[]
+  @@unique([versionId, locator])
+}
+
+model Surah {
+  number        Int @id
+  nameArabic    String
+  nameEnglish   String
+  meaning       String
+  revelation    String @db.VarChar(20)
+  ayahCount     Int
+  versionId     String @db.Uuid
+  version       ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  ayahs         Ayah[]
+  audio         QuranAudio[]
+  bookmarks     QuranBookmark[]
+  @@index([versionId])
+}
+
+model Juz {
+  number Int @id
+  name   String
+  ayahs  Ayah[]
+  @@index([number])
+}
+
+model Ayah {
+  id          String @id @default(uuid()) @db.Uuid
+  surahNumber Int
+  surah       Surah @relation(fields: [surahNumber], references: [number], onDelete: Restrict)
+  number      Int
+  globalNumber Int @unique
+  juzNumber   Int
+  juz         Juz @relation(fields: [juzNumber], references: [number], onDelete: Restrict)
+  page        Int
+  textUthmani String
+  versionId   String @db.Uuid
+  version     ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  texts       AyahText[]
+  words       QuranWord[]
+  audio       QuranAudio[]
+  bookmarks   QuranBookmark[]
+  notes       QuranNote[]
+  lastReaders LastRead[]
+  memorizationItems MemorizationItem[]
+  @@unique([surahNumber, number])
+  @@index([juzNumber, page])
+}
+
+model AyahText {
+  id        String @id @default(uuid()) @db.Uuid
+  ayahId    String @db.Uuid
+  ayah      Ayah @relation(fields: [ayahId], references: [id], onDelete: Cascade)
+  kind      TextKind
+  language  String @db.VarChar(12)
+  text      String
+  versionId String @db.Uuid
+  version   ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  @@unique([ayahId, kind, versionId])
+}
+
+model QuranWord {
+  id             String @id @default(uuid()) @db.Uuid
+  ayahId         String @db.Uuid
+  ayah           Ayah @relation(fields: [ayahId], references: [id], onDelete: Cascade)
+  position       Int
+  arabic         String
+  translation    String
+  transliteration String
+  versionId      String @db.Uuid
+  version        ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  @@unique([ayahId, position])
+}
+
+model Reciter {
+  id       String @id @default(uuid()) @db.Uuid
+  slug     String @unique @db.VarChar(60)
+  name     String
+  style    String?
+  audio    QuranAudio[]
+}
+
+model MediaAsset {
+  id        String @id @default(uuid()) @db.Uuid
+  url       String
+  checksum  String @db.Char(64)
+  mimeType  String @db.VarChar(60)
+  duration  Int?
+  audio     QuranAudio[]
+  lessons   LessonBlock[]
+  dhikr     Dhikr[]
+}
+
+model QuranAudio {
+  id        String @id @default(uuid()) @db.Uuid
+  reciterId String @db.Uuid
+  reciter   Reciter @relation(fields: [reciterId], references: [id], onDelete: Restrict)
+  assetId   String @db.Uuid
+  asset     MediaAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  surahNumber Int?
+  surah     Surah? @relation(fields: [surahNumber], references: [number], onDelete: Restrict)
+  ayahId    String? @db.Uuid
+  ayah      Ayah? @relation(fields: [ayahId], references: [id], onDelete: Restrict)
+  @@unique([reciterId, surahNumber])
+  @@unique([reciterId, ayahId])
+}
+
+model QuranBookmark {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  surahNumber Int?
+  surah     Surah? @relation(fields: [surahNumber], references: [number], onDelete: Restrict)
+  ayahId    String? @db.Uuid
+  ayah      Ayah? @relation(fields: [ayahId], references: [id], onDelete: Restrict)
+  label     String? @db.VarChar(100)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  rowVersion Int @default(1)
+  deletedAt DateTime? @db.Timestamptz(3)
+  @@index([userId, createdAt])
+}
+
+model QuranNote {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ayahId    String @db.Uuid
+  ayah      Ayah @relation(fields: [ayahId], references: [id], onDelete: Restrict)
+  body      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  rowVersion Int @default(1)
+  deletedAt DateTime? @db.Timestamptz(3)
+  @@index([userId, ayahId])
+}
+
+model LastRead {
+  userId    String @id @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ayahId    String @db.Uuid
+  ayah      Ayah @relation(fields: [ayahId], references: [id], onDelete: Restrict)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model MemorizationPlan {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String @db.VarChar(120)
+  targetDate DateTime? @db.Date
+  items     MemorizationItem[]
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@index([userId])
+}
+
+model MemorizationItem {
+  id        String @id @default(uuid()) @db.Uuid
+  planId    String @db.Uuid
+  plan      MemorizationPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  ayahId    String @db.Uuid
+  ayah      Ayah @relation(fields: [ayahId], references: [id], onDelete: Restrict)
+  strength  Int @default(0)
+  reviewedAt DateTime? @db.Timestamptz(3)
+  @@unique([planId, ayahId])
+}
+
+model HadithCollection {
+  id       String @id @default(uuid()) @db.Uuid
+  slug     String @unique @db.VarChar(60)
+  name     String
+  nameArabic String?
+  books    HadithBook[]
+}
+
+model HadithBook {
+  id           String @id @default(uuid()) @db.Uuid
+  collectionId String @db.Uuid
+  collection   HadithCollection @relation(fields: [collectionId], references: [id], onDelete: Restrict)
+  number       Int
+  title        String
+  hadiths      Hadith[]
+  @@unique([collectionId, number])
+}
+
+model Hadith {
+  id          String @id @default(uuid()) @db.Uuid
+  bookId      String @db.Uuid
+  book        HadithBook @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  number      Int
+  arabicNumber String? @db.VarChar(30)
+  canonicalReference String @unique
+  arabic      String
+  narrator    String?
+  versionId   String @db.Uuid
+  version     ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  translations HadithTranslation[]
+  gradings    HadithGrading[]
+  commentaries HadithCommentary[]
+  bookmarks   HadithBookmark[]
+  history     ReadingHistory[]
+  @@unique([bookId, number])
+  @@index([narrator])
+}
+
+model HadithTranslation {
+  id        String @id @default(uuid()) @db.Uuid
+  hadithId  String @db.Uuid
+  hadith    Hadith @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  language  String @db.VarChar(12)
+  text      String
+  versionId String @db.Uuid
+  version   ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  @@unique([hadithId, versionId])
+}
+
+model HadithGrading {
+  id        String @id @default(uuid()) @db.Uuid
+  hadithId  String @db.Uuid
+  hadith    Hadith @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  scholar   String
+  grade     String
+  citation  String
+  versionId String @db.Uuid
+  version   ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  @@unique([hadithId, scholar, versionId])
+}
+
+model HadithCommentary {
+  id        String @id @default(uuid()) @db.Uuid
+  hadithId  String @db.Uuid
+  hadith    Hadith @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  scholar   String
+  text      String
+  citation  String
+  versionId String @db.Uuid
+  version   ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  @@index([hadithId])
+}
+
+model HadithBookmark {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hadithId  String @db.Uuid
+  hadith    Hadith @relation(fields: [hadithId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@unique([userId, hadithId])
+}
+
+model ReadingHistory {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hadithId  String? @db.Uuid
+  hadith    Hadith? @relation(fields: [hadithId], references: [id], onDelete: Restrict)
+  articleId String? @db.Uuid
+  article   Article? @relation(fields: [articleId], references: [id], onDelete: Restrict)
+  readAt    DateTime @default(now()) @db.Timestamptz(3)
+  @@index([userId, readAt])
+}
+
+model Course {
+  id          String @id @default(uuid()) @db.Uuid
+  slug        String @unique @db.VarChar(100)
+  title       String
+  description String
+  level       LearningLevel
+  ordinal     Int
+  lessons     Lesson[]
+  enrollments Enrollment[]
+}
+
+model Lesson {
+  id          String @id @default(uuid()) @db.Uuid
+  courseId    String @db.Uuid
+  course      Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  slug        String @unique @db.VarChar(120)
+  title       String
+  ordinal     Int
+  durationMinutes Int
+  versionId   String @db.Uuid
+  version     ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  blocks      LessonBlock[]
+  exercises   Exercise[]
+  quizzes     Quiz[]
+  progress    LessonProgress[]
+  @@unique([courseId, ordinal])
+}
+
+model LessonBlock {
+  id        String @id @default(uuid()) @db.Uuid
+  lessonId  String @db.Uuid
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  ordinal   Int
+  kind      String @db.VarChar(30)
+  body      Json
+  audioId   String? @db.Uuid
+  audio     MediaAsset? @relation(fields: [audioId], references: [id], onDelete: Restrict)
+  @@unique([lessonId, ordinal])
+}
+
+model Exercise {
+  id        String @id @default(uuid()) @db.Uuid
+  lessonId  String @db.Uuid
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+  prompt    String
+  explanation String
+  ordinal   Int
+  options   ExerciseOption[]
+}
+
+model ExerciseOption {
+  id         String @id @default(uuid()) @db.Uuid
+  exerciseId String @db.Uuid
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  label      String
+  isCorrect  Boolean @default(false)
+}
+
+model Quiz {
+  id        String @id @default(uuid()) @db.Uuid
+  lessonId  String @db.Uuid
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+  version   Int @default(1)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+  @@unique([lessonId, version])
+}
+
+model QuizQuestion {
+  id        String @id @default(uuid()) @db.Uuid
+  quizId    String @db.Uuid
+  quiz      Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  ordinal   Int
+  prompt    String
+  options   Json
+  answerKey Json
+  answers   QuizAnswer[]
+  @@unique([quizId, ordinal])
+}
+
+model QuizAttempt {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId    String @db.Uuid
+  quiz      Quiz @relation(fields: [quizId], references: [id], onDelete: Restrict)
+  attemptNumber Int
+  quizVersion Int
+  status    AttemptStatus @default(IN_PROGRESS)
+  score     Decimal? @db.Decimal(5, 2)
+  startedAt DateTime @default(now()) @db.Timestamptz(3)
+  submittedAt DateTime? @db.Timestamptz(3)
+  answers   QuizAnswer[]
+  @@unique([userId, quizId, attemptNumber])
+}
+
+model QuizAnswer {
+  id         String @id @default(uuid()) @db.Uuid
+  attemptId  String @db.Uuid
+  attempt    QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId String @db.Uuid
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  response   Json
+  awardedScore Decimal @default(0) @db.Decimal(5, 2)
+  @@unique([attemptId, questionId])
+}
+
+model Enrollment {
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String @db.Uuid
+  course    Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  enrolledAt DateTime @default(now()) @db.Timestamptz(3)
+  @@id([userId, courseId])
+}
+
+model LessonProgress {
+  userId     String @db.Uuid
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId   String @db.Uuid
+  lesson     Lesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+  completedAt DateTime? @db.Timestamptz(3)
+  lastPosition Int @default(0)
+  rowVersion Int @default(1)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+  @@id([userId, lessonId])
+}
+
+model DhikrCollection {
+  id     String @id @default(uuid()) @db.Uuid
+  slug   String @unique @db.VarChar(80)
+  title  String
+  period String @db.VarChar(40)
+  items  Dhikr[]
+  personalCollections PersonalDhikrCollection[]
+}
+
+model Dhikr {
+  id            String @id @default(uuid()) @db.Uuid
+  collectionId  String @db.Uuid
+  collection    DhikrCollection @relation(fields: [collectionId], references: [id], onDelete: Restrict)
+  ordinal       Int
+  arabic        String
+  transliteration String
+  meaning       String
+  reference     String?
+  repetitionEvidence String?
+  recommendedCount Int?
+  audioId       String? @db.Uuid
+  audio         MediaAsset? @relation(fields: [audioId], references: [id], onDelete: Restrict)
+  versionId     String @db.Uuid
+  version       ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  sessions      DhikrSession[]
+  personalItems PersonalDhikrItem[]
+  @@unique([collectionId, ordinal])
+}
+
+model PersonalDhikrCollection {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String @db.VarChar(100)
+  baseCollectionId String? @db.Uuid
+  baseCollection DhikrCollection? @relation(fields: [baseCollectionId], references: [id], onDelete: SetNull)
+  items     PersonalDhikrItem[]
+  @@index([userId])
+}
+
+model PersonalDhikrItem {
+  collectionId String @db.Uuid
+  collection   PersonalDhikrCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  dhikrId      String @db.Uuid
+  dhikr        Dhikr @relation(fields: [dhikrId], references: [id], onDelete: Restrict)
+  target       Int
+  @@id([collectionId, dhikrId])
+}
+
+model DhikrSession {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dhikrId   String? @db.Uuid
+  dhikr     Dhikr? @relation(fields: [dhikrId], references: [id], onDelete: Restrict)
+  label     String
+  count     Int @default(0)
+  target    Int @default(33)
+  startedAt DateTime @default(now()) @db.Timestamptz(3)
+  endedAt   DateTime? @db.Timestamptz(3)
+  rowVersion Int @default(1)
+  deletedAt DateTime? @db.Timestamptz(3)
+  @@index([userId, startedAt])
+}
+
+model PrayerLog {
+  id          String @id @default(uuid()) @db.Uuid
+  userId      String @db.Uuid
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  localDate   DateTime @db.Date
+  prayer      Prayer
+  timezone    String @db.VarChar(60)
+  status      PrayerStatus
+  performedAt DateTime? @db.Timestamptz(3)
+  rowVersion  Int @default(1)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  deletedAt   DateTime? @db.Timestamptz(3)
+  @@unique([userId, localDate, prayer])
+  @@index([userId, localDate])
+}
+
+model TahajjudGoal {
+  userId       String @id @db.Uuid
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nightsPerWeek Int @default(2)
+  rakahTarget  Int @default(2)
+  reminderAt   String? @db.VarChar(5)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model TahajjudRecord {
+  id         String @id @default(uuid()) @db.Uuid
+  userId     String @db.Uuid
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nightDate  DateTime @db.Date
+  startedAt  DateTime @db.Timestamptz(3)
+  rakahCount Int
+  witrRakahs Int @default(0)
+  rowVersion Int @default(1)
+  deletedAt  DateTime? @db.Timestamptz(3)
+  @@unique([userId, nightDate])
+}
+
+model Category {
+  id       String @id @default(uuid()) @db.Uuid
+  slug     String @unique @db.VarChar(80)
+  title    String
+  articles Article[]
+}
+
+model Article {
+  id         String @id @default(uuid()) @db.Uuid
+  categoryId String @db.Uuid
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  slug       String @unique @db.VarChar(120)
+  title      String
+  summary    String
+  body       Json
+  scholarlyPositions Json?
+  versionId  String @db.Uuid
+  version    ContentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  publishedAt DateTime? @db.Timestamptz(3)
+  history    ReadingHistory[]
+}
+
+model WorshipGoal {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String @db.VarChar(120)
+  kind      String @db.VarChar(40)
+  cadence   Cadence
+  target    Int
+  unit      String @db.VarChar(30)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  progress  GoalProgress[]
+  @@index([userId])
+}
+
+model GoalProgress {
+  id          String @id @default(uuid()) @db.Uuid
+  goalId      String @db.Uuid
+  goal        WorshipGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  periodStart DateTime @db.Date
+  value       Int @default(0)
+  rowVersion  Int @default(1)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  @@unique([goalId, periodStart])
+}
+
+model JournalEntry {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  localDate DateTime @db.Date
+  title     String @db.VarChar(160)
+  body      String
+  checklist Json @default("{}")
+  fasting   Boolean?
+  tags      String[]
+  rowVersion Int @default(1)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  @@index([userId, localDate(sort: Desc)])
+}
+
+model PrayerTimeCache {
+  id          String @id @default(uuid()) @db.Uuid
+  localDate   DateTime @db.Date
+  latitudeBucket Decimal @db.Decimal(6, 2)
+  longitudeBucket Decimal @db.Decimal(6, 2)
+  method      String @db.VarChar(30)
+  asrMethod   AsrMethod
+  timezone    String @db.VarChar(60)
+  timings     Json
+  expiresAt   DateTime @db.Timestamptz(3)
+  @@unique([localDate, latitudeBucket, longitudeBucket, method, asrMethod, timezone])
+}
+
+model NotificationPreference {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      NotificationKind
+  prayer    Prayer?
+  enabled   Boolean @default(false)
+  offsetMinutes Int @default(0)
+  customTime String? @db.VarChar(5)
+  adhanAsset String? @db.VarChar(160)
+  @@unique([userId, kind, prayer])
+}
+
+model PushSubscription {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpointHash String @unique @db.Char(64)
+  endpoint  String
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  deliveries NotificationDelivery[]
+}
+
+model NotificationDelivery {
+  id             String @id @default(uuid()) @db.Uuid
+  userId         String @db.Uuid
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId String @db.Uuid
+  subscription   PushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  dedupeKey      String @unique
+  scheduledAt    DateTime @db.Timestamptz(3)
+  sentAt         DateTime? @db.Timestamptz(3)
+  status         String @db.VarChar(30)
+  @@index([scheduledAt, status])
+}
+
+model AIConversation {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String @db.VarChar(160)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  messages  AIMessage[]
+  @@index([userId, updatedAt])
+}
+
+model AIMessage {
+  id             String @id @default(uuid()) @db.Uuid
+  conversationId String @db.Uuid
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  ordinal        Int
+  role           MessageRole
+  content        String
+  model          String?
+  promptVersion  String?
+  status         String @db.VarChar(30)
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  citations      AICitation[]
+  @@unique([conversationId, ordinal])
+}
+
+model AICitation {
+  id        String @id @default(uuid()) @db.Uuid
+  messageId String @db.Uuid
+  message   AIMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  chunkId   String @db.Uuid
+  chunk     SourceChunk @relation(fields: [chunkId], references: [id], onDelete: Restrict)
+  excerpt   String
+  locator   String
+  @@unique([messageId, chunkId])
+}
+
+model AIRequest {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestId String @unique @db.Uuid
+  provider  String
+  status    String @db.VarChar(30)
+  usage     Json?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@index([userId, createdAt])
+}
+
+model SyncOperation {
+  id          String @id @default(uuid()) @db.Uuid
+  userId      String @db.Uuid
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientOpId  String @db.Uuid
+  sequence    BigInt
+  entityType  String @db.VarChar(60)
+  entityId    String @db.Uuid
+  action      SyncAction
+  payloadHash String @db.Char(64)
+  baseVersion Int?
+  result      Json
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  @@unique([userId, clientOpId])
+  @@unique([userId, sequence])
+}

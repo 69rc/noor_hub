@@ -1,0 +1,41 @@
+{
+  "name": "@sakinah/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource-variable/manrope": "5.3.0",
+    "@fontsource/amiri": "5.3.0",
+    "adhan": "4.4.6",
+    "framer-motion": "14.10.1",
+    "idb": "^8.0.3",
+    "lucide-react": "1.70.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-router-dom": "7.18.5"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@vitejs/plugin-react": "5.2.0",
+    "autoprefixer": "^10.4.21",
+    "jsdom": "31.0.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "3.4.19",
+    "vite": "7.3.7",
+    "vite-plugin-pwa": "2.0.0",
+    "vitest": "4.1.0",
+    "workbox-core": "^7.4.1",
+    "workbox-precaching": "^7.4.1",
+    "workbox-routing": "^7.4.1",
+    "workbox-strategies": "^7.4.1",
+    "workbox-expiration": "^7.4.1",
+    "workbox-cacheable-response": "^7.4.1"
+  }
+}

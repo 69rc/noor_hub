@@ -1,0 +1,9 @@
+import { Pause, Play, SkipForward, X, LoaderCircle, Volume2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAudio } from '../../lib/audio-context';
+import { IconButton } from '../ui';
+export function AudioPlayer() {
+  const player = useAudio();
+  if (!player.title) return null;
+  return <div className="fixed inset-x-3 bottom-[88px] z-40 mx-auto max-w-xl rounded-2xl border border-emerald-200 bg-emerald-800 p-3 text-white shadow-lift dark:border-emerald-700 lg:bottom-5 lg:left-[260px]"><div className="flex items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10"><Volume2 size={19} className="text-sage-200" /></div><Link to={`/quran/${player.surah}`} className="min-w-0 flex-1"><p className="truncate text-xs font-bold">{player.title}</p><p className="mt-1 text-[10px] text-emerald-100">{player.error || (player.offlineSource ? 'Playing from your downloads · tap to open' : 'Quran recitation · tap to open')}</p></Link><IconButton label={player.playing ? 'Pause recitation' : 'Play recitation'} onClick={player.toggle} className="bg-white/10 hover:bg-white/20">{player.loading ? <LoaderCircle size={19} className="animate-spin" /> : player.playing ? <Pause size={19} /> : <Play size={19} />}</IconButton><IconButton label="Next ayah" onClick={player.next} className="hidden hover:bg-white/20 sm:flex"><SkipForward size={17} /></IconButton><IconButton label="Stop recitation" onClick={player.stop} className="h-8 w-8 hover:bg-white/20"><X size={16} /></IconButton></div><input aria-label="Recitation position" type="range" min="0" max={player.duration || 1} value={Math.min(player.progress, player.duration || 1)} onChange={e => player.seek(Number(e.target.value))} className="mt-2 h-1 w-full cursor-pointer accent-sage-200" /></div>;
+}

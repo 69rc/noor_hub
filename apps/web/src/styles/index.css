@@ -1,0 +1,77 @@
+@import '@fontsource-variable/manrope';
+@import '@fontsource/amiri/arabic-400.css';
+@import '@fontsource/amiri/arabic-700.css';
+@import '@fontsource/amiri/latin-400.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: light; --page: #faf9f4; --surface: #fff; --text: #20382e; --muted: #6c7c72; --line: #e7ebe2; --soft: #f1f4ec; }
+  .dark { color-scheme: dark; --page: #101d19; --surface: #192b23; --text: #edf2e8; --muted: #a1b4a6; --line: #2c4034; --soft: #22382d; }
+  * { -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+  body { margin: 0; background: var(--page); color: var(--text); font-family: 'Manrope Variable', sans-serif; -webkit-font-smoothing: antialiased; }
+  button, a, input, select, textarea { outline-offset: 4px; }
+  :focus-visible { outline: 2px solid #bd922d; }
+  button, a { touch-action: manipulation; }
+  button:disabled { cursor: not-allowed; opacity: .5; }
+  ::selection { background: #dce7b5; color: #174b3a; }
+  ::-webkit-scrollbar { width: 6px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--page); }
+  ::-webkit-scrollbar-thumb { background: #8ebba2; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: #36795a; }
+  input[type='range'] { accent-color: #246347; }
+}
+@layer components {
+  .page { @apply mx-auto w-full max-w-6xl px-5 pb-32 pt-5 md:px-8 md:pb-16 md:pt-8; }
+  .surface { background: var(--surface); border: 1px solid var(--line); @apply rounded-3xl shadow-soft; }
+  .soft { background: var(--soft); }
+  .muted { color: var(--muted); }
+  .line { border-color: var(--line); }
+  .eyebrow { @apply text-[10px] font-extrabold uppercase tracking-[.18em]; }
+  .page-title { @apply text-[28px] font-extrabold tracking-tight md:text-4xl; }
+  .section-title { @apply text-lg font-extrabold tracking-tight; }
+  .icon-button { @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-emerald-50 active:scale-95 dark:hover:bg-night-soft; }
+  .input { background: var(--surface); border-color: var(--line); @apply min-h-12 w-full rounded-xl border px-4 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20; }
+  .btn-primary { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 text-sm font-bold text-white shadow-soft transition hover:bg-emerald-600 active:scale-[.98] dark:bg-emerald-500 dark:hover:bg-emerald-400; }
+  .btn-secondary { background: var(--soft); @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold transition hover:bg-emerald-100 active:scale-[.98] dark:hover:bg-emerald-900; }
+  .arabic { font-family: 'Amiri', serif; direction: rtl; unicode-bidi: isolate; line-height: 2.15; }
+  .geometric { background-image: url("data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M32 0 42 22 64 32 42 42 32 64 22 42 0 32 22 22Z M22 22h20v20H22z' fill='none' stroke='%23ffffff' stroke-opacity='.1' stroke-width='.7'/%3E%3C/svg%3E"); }
+  .skeleton { @apply relative overflow-hidden rounded-xl bg-emerald-100/60 dark:bg-night-soft; }
+  .skeleton::after { @apply absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/5; content: ''; }
+}
+.taj-madd { color: #1d4ed8; }
+.taj-ghunnah { color: #047857; }
+.taj-ikhfa { color: #6d28d9; }
+.taj-idgham { color: #0f766e; }
+.taj-iqlab { color: #c2410c; }
+.taj-izhar { color: #475569; }
+.taj-qalqalah { color: #b91c1c; }
+.taj-lam { color: #a16207; }
+.dark .taj-madd { color: #93c5fd; }
+.dark .taj-ghunnah { color: #6ee7b7; }
+.dark .taj-ikhfa { color: #c4b5fd; }
+.dark .taj-idgham { color: #5eead4; }
+.dark .taj-iqlab { color: #fdba74; }
+.dark .taj-izhar { color: #cbd5e1; }
+.dark .taj-qalqalah { color: #fca5a5; }
+.dark .taj-lam { color: #fcd34d; }
+.taj-live { border-radius: .18em; background: rgb(23 75 58 / .12); box-shadow: 0 0 0 .1em rgb(23 75 58 / .12); }
+.dark .taj-live { background: rgb(255 255 255 / .14); box-shadow: 0 0 0 .1em rgb(255 255 255 / .14); }
+.taj-anim { --taj-glow: rgb(23 75 58 / .18); border-radius: .18em; animation: taj-glow 1.8s ease-in-out infinite; }
+.dark .taj-anim { --taj-glow: rgb(255 255 255 / .22); }
+@keyframes taj-glow {
+  0%, 100% { background-color: transparent; box-shadow: 0 0 0 0 transparent; }
+  50% { background-color: var(--taj-glow); box-shadow: 0 0 0 .14em var(--taj-glow); }
+}
+.taj-now { --taj-ring: rgb(202 138 4 / .30); border-radius: .18em; background-color: var(--taj-ring); box-shadow: 0 0 0 .1em var(--taj-ring); }
+.dark .taj-now { --taj-ring: rgb(250 204 21 / .28); }
+.taj-now-pulse { animation: taj-ring 1.3s ease-in-out infinite; }
+@keyframes taj-ring {
+  0%, 100% { box-shadow: 0 0 0 .1em var(--taj-ring); }
+  50% { box-shadow: 0 0 0 .26em var(--taj-ring); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

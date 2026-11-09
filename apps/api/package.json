@@ -1,0 +1,31 @@
+{
+  "name": "@sakinah/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:push": "prisma db push"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "argon2": "^0.44.0",
+    "cookie-parser": "1.4.7",
+    "cors": "2.8.6",
+    "dotenv": "18.0.10",
+    "express": "5.3.0",
+    "express-rate-limit": "8.7.3",
+    "helmet": "8.3.0",
+    "jose": "^6.1.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "prisma": "6.19.3",
+    "supertest": "7.3.2",
+    "vitest": "4.1.0"
+  }
+}
