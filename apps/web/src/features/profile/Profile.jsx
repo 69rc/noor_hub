@@ -216,6 +216,7 @@ export default function Profile() {
         <div className="space-y-3">
           <Button variant="secondary" className="w-full justify-between" onClick={exportDevice}><span className="flex items-center gap-2"><Download size={16} />Export this device’s data</span><ChevronRight size={16} /></Button>
           {user && <Button variant="secondary" className="w-full justify-between" onClick={exportAccount} loading={busy === 'export'}><span className="flex items-center gap-2"><Cloud size={16} />Export account data</span><ChevronRight size={16} /></Button>}
+          <Link to="/downloads" className="btn-secondary w-full justify-between"><span className="flex items-center gap-2"><Download size={16} />Manage offline downloads</span><ChevronRight size={16} /></Link>
           <Button variant="secondary" className="w-full justify-between" onClick={clearDownloads} loading={busy === 'downloads'}><span className="flex items-center gap-2"><BookOpen size={16} />Clear downloaded content</span><ChevronRight size={16} /></Button>
           <button onClick={() => setConfirm({ kind: 'reset-device' })} className="flex min-h-12 w-full items-center justify-between rounded-xl border border-clay-300 px-5 text-sm font-bold text-clay-600 transition hover:bg-clay-100 dark:border-clay-600/40 dark:hover:bg-clay-600/15"><span className="flex items-center gap-2"><Trash2 size={16} />Reset all local data</span><ChevronRight size={16} /></button>
         </div>

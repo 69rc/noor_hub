@@ -132,6 +132,13 @@ never be gated behind sign-up.
 The header shows a live status chip: “Ready for your day”, “N awaiting sync”, or “Offline
 mode”, and an offline banner appears when connectivity drops.
 
+The **Downloads** screen (`/downloads`, linked from the Quran header, the reader’s audio sheet
+and Profile) saves whole collections in one go: the full Quran recitation for a chosen reciter
+(all 6,236 ayahs), the full Quran text for a chosen translation, and every Hisn al-Muslim
+recording. Jobs run with limited concurrency, show live progress, and support pause, resume and
+cancel; already-saved files are skipped on restart and failed items are listed so a re-run
+retries only those. Saved files stay in IndexedDB on the device and can be removed per collection.
+
 ---
 
 ## Repository layout
@@ -174,7 +181,8 @@ including AlQuran Cloud, the fawazahmed0 Hadith API, and the complete **Hisn al-
 (Fortress of the Muslim) bundled in-app with attributed Arabic text and references.
 
 Recitation audio streams from **everyayah.com** (26 reciters, murattal and mujawwad styles) and
-can be downloaded per surah, per reciter, into IndexedDB for fully offline playback; switching
+can be downloaded per surah or as the **entire Quran in one go** from the Downloads screen, per
+reciter, into IndexedDB for fully offline playback with pause/resume/cancel; switching
 reciter never discards a saved download, and the Islamic Network CDN is an automatic one-time
 fallback if a stream fails. While a surah recites, the verse being played stays at full opacity
 (other verses recede) and the exact word being recited right now is marked with a gold
@@ -238,7 +246,8 @@ The **complete book** is bundled in-app under **Worship → Hisn al-Muslim** —
   per-item tap counter tracks repetitions for the day and marks the chapter done when all are
   counted — a personal aid, never a religious requirement or a scorecard.
 - **Audio**: per-entry recitation from hisnmuslim.com and full-chapter recitation courtesy
-  of Islamway (Doors), played through the global player. Text works fully offline; audio streams.
+  of Islamway (Doors), played through the global player. Text works fully offline; audio streams
+  online, or plays offline once saved in bulk from the Downloads screen.
 - **Honest sourcing**: Arabic text and references come from the al-Qaḥṭānī edition
   (`asellam/HisnElMuslim`); English/transliteration from `hisnmuslim.com`, matched by normalized
   Arabic text (never by position). Every entry carries a reference; the 9 entries with no matching

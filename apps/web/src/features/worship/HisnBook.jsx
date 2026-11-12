@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Check, ChevronLeft, ChevronRight, Headphones, Play, RotateCcw, Search, Volume2 } from 'lucide-react';
 import book from '../../data/hisn.json';
 import { useLocalState, useOnline } from '../../lib/hooks';
 import { usePreferences } from '../../lib/preferences';
 import { useAudio } from '../../lib/audio-context';
+import { hisnAudioSaved, resolveHisnUrl } from '../../lib/audio-downloads';
 import { useToast } from '../../lib/toast';
 import { HISN_STATE_KEY, todayKey, searchChapters, chapterProgress, incrementCounter, resetChapterCounters, markChapterComplete, unmarkChapterComplete, defaultHisnState, cleanArabic, cleanTranslit } from '../../lib/hisn';
 import { Badge, Button, IconButton, ProgressRing, Toggle } from '../../components/ui';
@@ -31,13 +32,13 @@ export default function HisnBook() {
   const closeChapter = () => setParams({ tab: 'hisn' });
 
   const playChapter = c => {
-    if (!online) { notify('Chapter audio needs an internet connection. The text is fully available offline.'); return; }
-    player.play([{ url: c.audio, title: `${c.id}. ${c.titleEn}`, reciter: 'Hisn al-Muslim', album: ALBUM }], 0, 'off');
+    if (!online && !hisnAudioSaved('chapter', c.id)) { notify('Chapter audio needs an internet connection, or save it from Downloads. The text is fully available offline.'); return; }
+    player.play([{ url: () => resolveHisnUrl('chapter', c.id, c.audio), title: `${c.id}. ${c.titleEn}`, reciter: 'Hisn al-Muslim', album: ALBUM }], 0, 'off');
   };
   const playItem = (c, item) => {
-    if (!online) { notify('Audio needs an internet connection. The text is fully available offline.'); return; }
     if (!item.audio) { playChapter(c); return; }
-    player.play([{ url: item.audio, title: `${c.titleEn} · ${item.id}`, reciter: 'Hisn al-Muslim', album: ALBUM }], 0, 'off');
+    if (!online && !hisnAudioSaved('item', item.id)) { notify('Audio needs an internet connection, or save it from Downloads. The text is fully available offline.'); return; }
+    player.play([{ url: () => resolveHisnUrl('item', item.id, item.audio), title: `${c.titleEn} · ${item.id}`, reciter: 'Hisn al-Muslim', album: ALBUM }], 0, 'off');
   };
 
   const tap = (c, item) => {
@@ -79,6 +80,7 @@ function ChapterIndex({ query, setQuery, completedToday, counters, onOpen, onlin
               <p className="mt-1 text-[11px] text-emerald-200">Your personal pace — no obligation, no blame.</p>
             </div>
           </div>
+          <Link to="/downloads" className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/20 px-4 text-xs font-bold text-emerald-100"><Headphones size={15} />Save all audio for offline</Link>
         </div>
       </section>
 
@@ -88,7 +90,7 @@ function ChapterIndex({ query, setQuery, completedToday, counters, onOpen, onlin
         {query && <button onClick={() => setQuery('')} className="muted text-xs font-bold">Clear</button>}
       </div>
 
-      {!online && <p className="soft rounded-xl px-4 py-3 text-[11px] leading-relaxed muted">You’re offline. All chapter text and references are available; audio requires a connection.</p>}
+      {!online && <p className="soft rounded-xl px-4 py-3 text-[11px] leading-relaxed muted">You’re offline. All chapter text and references are available; audio plays for whatever you’ve saved in Downloads.</p>}
 
       <div className="grid gap-3 md:grid-cols-2">
         {results.map(c => {
@@ -158,7 +160,7 @@ function ChapterReader({ chapter, counters, prefs, setPrefs, completed, online, 
         </div>
       </section>
 
-      {!online && <p className="soft rounded-xl px-4 py-3 text-[11px] leading-relaxed muted">Offline — text and references are fully available. Audio needs a connection.</p>}
+      {!online && <p className="soft rounded-xl px-4 py-3 text-[11px] leading-relaxed muted">Offline — text and references are fully available. Saved audio plays; unsaved audio needs a connection.</p>}
 
       <div className="space-y-4">
         {chapter.items.map((item, idx) => (

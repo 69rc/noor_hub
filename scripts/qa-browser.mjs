@@ -5,7 +5,7 @@ const BASE = process.env.QA_BASE || 'http://localhost:5173';
 const OUT = '/tmp/sakinah-qa';
 fs.mkdirSync(OUT, { recursive: true });
 
-const ROUTES = ['/', '/prayers', '/prayers?view=qibla', '/quran', '/quran/1', '/learn', '/hadith', '/worship', '/worship?tab=tasbih', '/worship?tab=adhkar', '/worship?tab=hisn', '/worship?tab=hisn&chapter=27', '/worship?tab=tahajjud', '/journal', '/library', '/assistant', '/profile', '/profile/sources', '/welcome'];
+const ROUTES = ['/', '/prayers', '/prayers?view=qibla', '/quran', '/quran/1', '/learn', '/hadith', '/worship', '/worship?tab=tasbih', '/worship?tab=adhkar', '/worship?tab=hisn', '/worship?tab=hisn&chapter=27', '/worship?tab=tahajjud', '/journal', '/library', '/assistant', '/profile', '/profile/sources', '/downloads', '/welcome'];
 const report = [];
 const fail = (view, route, check, detail) => report.push({ view, route, check, ok: false, detail });
 const pass = (view, route, check) => report.push({ view, route, check, ok: true });
