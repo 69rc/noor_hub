@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_PREFERENCES, loadPreferences } from './constants';
+import { useAutoLocation } from './geolocation';
 const PreferencesContext = createContext(null);
 export function PreferencesProvider({ children }) {
   const [preferences, setPreferences] = useState(loadPreferences);
@@ -12,6 +13,7 @@ export function PreferencesProvider({ children }) {
     try { localStorage.setItem('sakinah.preferences', JSON.stringify(preferences)); } catch { window.dispatchEvent(new CustomEvent('sakinah-storage-error')); }
   }, [preferences, dark]);
   const update = patch => setPreferences(current => ({ ...current, ...(typeof patch === 'function' ? patch(current) : patch) }));
+  useAutoLocation(preferences.location, update);
   const value = useMemo(() => ({ preferences, update, dark, reset: () => setPreferences(structuredClone(DEFAULT_PREFERENCES)) }), [preferences, dark]);
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
 }

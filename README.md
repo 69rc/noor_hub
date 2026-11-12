@@ -309,8 +309,9 @@ The web app is a static Vite build and deploys to Vercel unchanged; the Express 
   `sameSite=lax`, and scoped to `/api/v1/auth`.
 - `helmet`, CORS locked to `WEB_ORIGIN`, JSON body limit `256kb`, and rate limiting on
   `/api` (180/min) and auth (30/15 min) and the assistant (10/min).
-- Location is **privacy-conscious**: handled on-device, coarse-bucketed if ever cached
-  server-side, and never required.
+- Location is **privacy-conscious**: prayer times follow the device location after the
+  browser's one-time permission prompt; coordinates stay on-device, are coarse-bucketed
+  if ever cached server-side, and manual entry is always available.
 - Users can **export** all their data as JSON and **delete** their account (confirmation
   string required). Guests can clear local data from the device without an account.
 - Tone is non-judgmental: no shame or guilt-based messaging anywhere in the product.

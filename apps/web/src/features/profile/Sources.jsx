@@ -15,7 +15,7 @@ const SOURCES = [
 
 const PRIVACY = [
   { icon: Heart, title: 'Guest-first, always', body: 'Every core feature works without an account. Your prayers, reading, dhikr, lessons and journal are saved on this device.' },
-  { icon: MapPin, title: 'Location is opt-in', body: 'Geolocation is requested only when you ask. Coordinates stay on your device unless you choose to sync an account. Manual entry works just as well.' },
+  { icon: MapPin, title: 'Location stays on your device', body: 'Prayer times follow your device location after you allow the browser’s one-time permission prompt. Deny it and manual entry works just as well. Coordinates are never uploaded unless you choose to sync an account.' },
   { icon: Lock, title: 'Recordings stay local', body: 'Pronunciation practice asks for the microphone only when you press Record. Clips stay in memory on this device, are never uploaded, and are not automatically scored.' },
   { icon: Lock, title: 'No secrets in the frontend', body: 'Private API keys and AI credentials are kept server-side in secure environment variables and never shipped to the browser.' },
   { icon: ShieldCheck, title: 'Export & deletion', body: 'Export your device data or account data as JSON anytime. Delete your account and its server data permanently from your profile.' },

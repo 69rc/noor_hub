@@ -1,6 +1,6 @@
 export const DEFAULT_PREFERENCES = {
   theme: 'light', language: 'en', name: '', onboarded: false,
-  location: { label: 'Makkah, Saudi Arabia', country: 'SA', latitude: 21.4225, longitude: 39.8262, timezone: 'Asia/Riyadh', manual: true },
+  location: { label: 'Makkah, Saudi Arabia', country: 'SA', latitude: 21.4225, longitude: 39.8262, timezone: 'Asia/Riyadh', manual: false },
   method: 'UmmAlQura', asr: 'standard', translation: 'en.sahih', reciter: 'alafasy', learningLevel: 'beginner',
   notifications: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false, morning: false, evening: false, quran: false, tahajjud: false, learning: false, lead: 0 },
   widgets: ['prayer', 'quran', 'dhikr', 'learning', 'hadith', 'verse', 'tahajjud'], haptics: true, quranGoal: 5, dhikrGoal: 33
@@ -47,6 +47,7 @@ export function loadPreferences() {
     const merged = { ...DEFAULT_PREFERENCES, ...saved, location: { ...DEFAULT_PREFERENCES.location, ...saved.location }, notifications: { ...DEFAULT_PREFERENCES.notifications, ...saved.notifications } };
     merged.reciter = LEGACY_RECITERS[merged.reciter] || merged.reciter;
     if (!RECITERS.some(r => r.value === merged.reciter)) merged.reciter = DEFAULT_PREFERENCES.reciter;
+    if (merged.location.manual === true && merged.location.latitude === 21.4225 && merged.location.longitude === 39.8262) merged.location.manual = false;
     return merged;
   } catch { return structuredClone(DEFAULT_PREFERENCES); }
 }

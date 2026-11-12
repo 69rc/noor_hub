@@ -28,3 +28,21 @@ describe('guest preferences', () => {
     expect(PRAYERS).toEqual(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']);
   });
 });
+
+describe('location auto-detection', () => {
+  beforeEach(() => localStorage.clear());
+  it('defaults to following the device location', () => {
+    expect(DEFAULT_PREFERENCES.location.manual).toBe(false);
+    expect(loadPreferences().location.manual).toBe(false);
+  });
+  it('migrates the old Makkah placeholder so existing users auto-detect', () => {
+    localStorage.setItem('sakinah.preferences', JSON.stringify({ location: { label: 'Makkah, Saudi Arabia', latitude: 21.4225, longitude: 39.8262, timezone: 'Asia/Riyadh', manual: true } }));
+    expect(loadPreferences().location.manual).toBe(false);
+  });
+  it('preserves a genuine manual pin', () => {
+    localStorage.setItem('sakinah.preferences', JSON.stringify({ location: { label: 'London', latitude: 51.5074, longitude: -0.1278, timezone: 'Europe/London', manual: true } }));
+    const loc = loadPreferences().location;
+    expect(loc.manual).toBe(true);
+    expect(loc.latitude).toBe(51.5074);
+  });
+});
