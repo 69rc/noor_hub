@@ -23,8 +23,8 @@ Node + Express + Prisma API (`apps/api`).
 | PWA       | `vite-plugin-pwa` (injectManifest) + a hand-written Workbox service worker |
 | Storage   | Local-first: `localStorage` (preferences, worship records) + IndexedDB via `idb` (content cache, sync outbox, per-reciter audio downloads) |
 | Backend   | Node 22, Express 5, Prisma 6, PostgreSQL, Zod validation, JOSE (JWT), Argon2id |
-| Content   | AlQuran Cloud (Quran text/translation), everyayah.com (recitation audio, 26 reciters), fawazahmed0/hadith-api (Hadith), `adhan` (prayer times), `Intl` (Hijri) |
-| Testing   | Vitest (web jsdom + api node/supertest), Playwright (viewport + PWA QA scripts) |
+| Content   | AlQuran Cloud (Quran text/translation), everyayah.com (recitation audio, 26 reciters), Quran.com (word-by-word meaning/audio), Harfi Books (letter & harakat recordings), UmmahAPI (attributed tafsir), fawazahmed0/hadith-api (Hadith), `adhan` (prayer times), `Intl` (Hijri) |
+| Testing   | Vitest (web jsdom + api node/supertest), Playwright (viewport, PWA and academy QA scripts) |
 
 ---
 
@@ -90,7 +90,7 @@ Open http://localhost:5173. The dev server proxies `/api` → `:4000`.
 ### 5. Production build & preview
 
 ```bash
-npm run build      # emits dist/ + service worker (52 precache entries)
+npm run build      # emits dist/ + service worker (precache app shell)
 npm run preview    # serves dist/ on :4173
 ```
 
@@ -110,6 +110,7 @@ npm run preview    # serves dist/ on :4173
 | `npm run db:push`     | Push schema without a migration (dev only) |
 | `npm run assets`      | Regenerate PWA icons from `scripts/generate-assets.mjs` |
 | `node scripts/qa-browser.mjs` | Playwright sweep: 17 routes × mobile+desktop + interaction flows |
+| `node scripts/qa-academy.mjs` | Playwright academy sweep: 11 Learn tabs × mobile+desktop + end-to-end learning flow |
 | `node scripts/qa-pwa.mjs`     | Playwright PWA checks against the preview build |
 
 ---
@@ -169,20 +170,83 @@ Full folder structure, navigation map, data-flow, and caching strategy are in
 All religious content is attributed and fetched from public, licensed sources — never
 invented. See the in-app **Profile → Content sources & privacy** page
 (`apps/web/src/features/profile/Sources.jsx`) and `docs/PHASE-1.md` for the full list,
-including AlQuran Cloud, the fawazahmed0 Hadith API, and Hisn al-Muslim for morning/evening
-adhkar (linked rather than partially reproduced, to avoid misquoting).
+including AlQuran Cloud, the fawazahmed0 Hadith API, and the complete **Hisn al-Muslim**
+(Fortress of the Muslim) bundled in-app with attributed Arabic text and references.
 
 Recitation audio streams from **everyayah.com** (26 reciters, murattal and mujawwad styles) and
 can be downloaded per surah, per reciter, into IndexedDB for fully offline playback; switching
 reciter never discards a saved download, and the Islamic Network CDN is an automatic one-time
-fallback if a stream fails. On-screen **tajweed colours** mark madd, ghunnah, ikhfa, idgham,
-iqlab, izhar, qalqalah and the lam of ال on the individual letters while you read or listen.
-They are toggleable in the reader and are presented as a study aid following common conventions
-— not a certified mushaf. While a surah recites, the verse being played is indicated with an
-animated glow that sweeps across its tajweed letters (other verses recede), and the exact word
-being recited right now is marked with a gold highlighter that moves word by word with the audio
-position; the colours and the animation are independent toggles, and the animation is disabled
-automatically under `prefers-reduced-motion`.
+fallback if a stream fails. While a surah recites, the verse being played stays at full opacity
+(other verses recede) and the exact word being recited right now is marked with a gold
+highlighter that moves word by word with the audio position. The **Hifz** tab tracks memorized ayahs per surah and brings them back for self-graded review on a spaced schedule (1, 3, 7, 14, 30, 60 days); verses are marked from the reader's graduation-cap button. The reader's **Study this verse** opens in-app,
+per-verse tafsir quoted from attributed editions — Ibn Kathir (abridged, English) or Tafsir
+al-Muyassar (Arabic) via UmmahAPI — shown with its named author and cached on the device after
+first load; commentary is presented as scholarly explanation, distinct from the Quran text and
+from translations.
+
+---
+
+## Quran Learning Academy
+
+The **Learn** section (`/learn`) is an interactive academy built on the existing app shell —
+dashboard, navigation, auth and routing are unchanged. It opens on a personalized overview
+(level, streak, daily XP goal, weekly activity, completed lessons and a recommended next step)
+and carries eight connected modules:
+
+1. **Arabic Alphabet** — 28 letter cards with two recorded voices, articulation hints,
+   isolated/initial/medial/final forms, tap-to-hear audio, recognition & matching exercises.
+2. **Harakat** — fathah, kasrah, dammah, sukoon, shaddah and the three tanween marks with
+   drills, example words, sound-recognition and fill-the-mark practice.
+3. **Word Builder** — tap-to-join letter arrangement across beginner/elementary/intermediate
+   decks, with syllable warm-ups and a star rating per word.
+4. **Tajweed** — eight lessons (makharij, sifat, noon sakinah & tanween, meem sakinah, madd,
+   qalqalah, stopping/starting) with verified Arabic examples played as full recorded ayahs.
+5. **Quran Reading** — word-by-word Arabic, toggleable transliteration, Sahih International
+   translation, per-word audio/meaning/grammar links, bookmarks and saved reading position.
+6. **Hifz** — ayah-range repetition (5/10/20/unlimited), hide/reveal self-testing, manual
+   memorisation states and a shared spaced-revision queue (1/3/7/14/30/60 days).
+7. **Vocabulary** — Quranic word cards with flashcards, matching, quizzes, saved words and
+   spaced repetition.
+8. **Understanding** — clearly separated Arabic / transliteration / translation / word meanings /
+   attributed tafsir layers, plus Nahw & Sarf primers and a referenced hadith on learning.
+
+A reusable exercise engine powers MCQ, true/false, audio identification, matching, ordering,
+fill-the-blank and flashcards with immediate feedback, explanations, attempt recording and
+retry. A placement quiz sets one of seven levels; the daily goal is adjustable. Progress is
+local-first (`sakinah.academy`) and syncs per user through `GET /api/v1/learn/state` and
+`POST /api/v1/learn/sync` when an account is connected. Deep links use `?tab=` and `?lesson=`;
+the legacy courses remain at `/learn/:lesson`.
+
+Pronunciation practice uses `MediaRecorder` only after an explicit Record tap: clips stay in
+memory on the device, are never uploaded, and are **not** automatically scored. Memorisation is
+marked only by the learner — listening alone never marks an ayah memorised. Letter/harakat
+audio comes from Harfi Books, word data from Quran.com, grammar links from the Quranic Arabic
+Corpus, and tafsir from UmmahAPI (Ibn Kathir, abridged), all attributed in-app.
+
+---
+
+## Hisn al-Muslim (Fortress of the Muslim)
+
+The **complete book** is bundled in-app under **Worship → Hisn al-Muslim** — all 132 chapters,
+274 supplications — compiled by Saʿīd ibn ʿAlī ibn Wahf al-Qaḥṭānī.
+
+- **Chapter index** with live search (English/Arabic title or number) and a gentle daily
+  progress ring; **chapter reader** with prev/next navigation and deep links
+  (`/worship?tab=hisn&chapter=27`).
+- Each entry shows the **Arabic text**, optional **transliteration** and **English translation**
+  (toggleable), the **repetition count**, and its **attributed hadith reference(s)**. A private
+  per-item tap counter tracks repetitions for the day and marks the chapter done when all are
+  counted — a personal aid, never a religious requirement or a scorecard.
+- **Audio**: per-entry recitation from hisnmuslim.com and full-chapter recitation courtesy
+  of Islamway (Doors), played through the global player. Text works fully offline; audio streams.
+- **Honest sourcing**: Arabic text and references come from the al-Qaḥṭānī edition
+  (`asellam/HisnElMuslim`); English/transliteration from `hisnmuslim.com`, matched by normalized
+  Arabic text (never by position). Every entry carries a reference; the 9 entries with no matching
+  translation are shown in Arabic only and labelled. Morning and evening adhkar are combined in
+  chapter 27, and the Adhkar tab cross-links there.
+
+Data lives in `apps/web/src/data/hisn.json` (lazy-loaded, precached); pure helpers in
+`apps/web/src/lib/hisn.js`; UI in `apps/web/src/features/worship/HisnBook.jsx`.
 
 ---
 
@@ -195,10 +259,18 @@ automatically under `prefers-reduced-motion`.
 - **iOS background audio, notifications, and install** behave differently from Android.
   Full-screen install and reliable notifications on iOS require “Add to Home Screen” and
   HTTPS; the app explains this in-context rather than assuming it works.
-- **Morning/evening adhkar** link out to Hisn al-Muslim instead of shipping partial text.
+- **Hisn al-Muslim audio needs a connection.** All 132 chapters' text, references and counts
+  are bundled offline; recitation audio streams online. A few entries (9) have no matching
+  English translation in the cited edition and are shown in Arabic only, labelled honestly.
 - **DB-backed auth/sync** is implemented and unit-tested at the HTTP boundary (guest-mode
   responses), but has not been exercised end-to-end against a live PostgreSQL instance in
   this environment.
+- **Pronunciation is never auto-scored.** The recorder is a listen-and-compare aid; accurate
+  articulation and tajweed correction belong with a qualified teacher.
+- **Hifz states are self-reported.** Listening or revealing text does not mark an ayah
+  memorised; the learner chooses the state and grades their own revision.
+- **Academy audio and word-by-word data need a first online load.** Lessons and quizzes are
+  bundled, but Harfi Books recordings and Quran.com word data are fetched and cached on use.
 
 These constraints are surfaced in the UI so users are never misled about what works offline,
 in the background, or without an account.
@@ -220,6 +292,11 @@ The web app is a static Vite build and deploys to Vercel unchanged; the Express 
    (Railway, Render, Fly…) with Neon or Supabase Postgres to enable accounts and the assistant.
 4. The API is not serverless-ready as written — it expects a long-lived process and a direct
    Postgres connection — so keep it off Vercel unless it is refactored into functions.
+5. **Installed PWAs self-update — no reinstall.** The service worker uses `autoUpdate` with
+   `skipWaiting` + `clientsClaim`, and the page reloads once when a new worker takes control.
+   `vercel.json` serves `sw.js`, `index.html` and the manifest with `no-cache` so iOS/Android
+   always revalidate the worker on launch. After a deploy, users simply reopen the home-screen
+   app (or it refreshes itself) to get the new version; their saved data is untouched.
 
 ---
 

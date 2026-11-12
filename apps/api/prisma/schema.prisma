@@ -129,6 +129,14 @@ model User {
   conversations  AIConversation[]
   aiRequests     AIRequest[]
   syncOperations SyncOperation[]
+  learningProfile   LearningProfile?
+  learningLessons   LearningLessonState[]
+  learningLetters   LearningLetterState[]
+  learningWords     LearningWordState[]
+  learningActivity  LearningActivity[]
+  learningAttempts  LearningAttempt[]
+  learningBookmarks LearningBookmark[]
+  learningHifz      LearningHifzState[]
 }
 
 model UserPreferences {
@@ -902,6 +910,95 @@ model AIRequest {
   usage     Json?
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   @@index([userId, createdAt])
+}
+
+model LearningProfile {
+  userId         String   @id @db.Uuid
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level          Int      @default(1)
+  dailyGoal      Int      @default(20)
+  assessmentDone Boolean  @default(false)
+  voice          String   @default("female-Asmaa") @db.VarChar(40)
+  reading        Json     @default("{}")
+  builder        Json     @default("{}")
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model LearningLessonState {
+  userId      String   @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String   @db.VarChar(80)
+  status      String   @db.VarChar(20)
+  score       Int      @default(0)
+  total       Int      @default(0)
+  bestScore   Int      @default(0)
+  position    Int      @default(0)
+  completedAt DateTime? @db.Timestamptz(3)
+  updatedAt   DateTime @db.Timestamptz(3)
+  @@id([userId, lessonId])
+}
+
+model LearningLetterState {
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  letterId  String   @db.VarChar(20)
+  mastered  Boolean  @default(false)
+  updatedAt DateTime @db.Timestamptz(3)
+  @@id([userId, letterId])
+}
+
+model LearningWordState {
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wordKey   String   @db.VarChar(40)
+  interval  Int      @default(1)
+  due       String   @db.VarChar(10)
+  reviews   Int      @default(0)
+  state     String   @default("learning") @db.VarChar(20)
+  saved     Boolean  @default(false)
+  updatedAt DateTime @db.Timestamptz(3)
+  @@id([userId, wordKey])
+  @@index([userId, due])
+}
+
+model LearningActivity {
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day       String   @db.VarChar(10)
+  xp        Int      @default(0)
+  lessons   Int      @default(0)
+  exercises Int      @default(0)
+  updatedAt DateTime @db.Timestamptz(3)
+  @@id([userId, day])
+}
+
+model LearningAttempt {
+  id        String   @id @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module    String   @db.VarChar(40)
+  kind      String   @db.VarChar(20)
+  prompt    String   @db.VarChar(300)
+  correct   Boolean
+  createdAt DateTime @db.Timestamptz(3)
+  @@index([userId, createdAt])
+}
+
+model LearningBookmark {
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ref       String   @db.VarChar(20)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@id([userId, ref])
+}
+
+model LearningHifzState {
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ref       String   @db.VarChar(20)
+  status    String   @db.VarChar(20)
+  updatedAt DateTime @db.Timestamptz(3)
+  @@id([userId, ref])
 }
 
 model SyncOperation {

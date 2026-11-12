@@ -45,7 +45,7 @@ export function useRecitation() {
     audio.src = source; audio.playbackRate = stateRef.current.speed;
     setState(s => ({ ...s, title: item.title, surah: item.surah, ayah: item.ayah, index, total: queueRef.current.length, progress: 0, duration: 0, loading: true, error: '', offlineSource: source.startsWith('blob:') }));
     audio.play().catch(() => setState(s => ({ ...s, loading: false, playing: false, error: 'Playback was blocked. Tap play to try again.' })));
-    if ('mediaSession' in navigator) { navigator.mediaSession.metadata = new MediaMetadata({ title: item.title, artist: item.reciter, album: 'Noor Hub · Quran' }); navigator.mediaSession.setActionHandler('play', () => audio.play()); navigator.mediaSession.setActionHandler('pause', () => audio.pause()); }
+    if ('mediaSession' in navigator) { navigator.mediaSession.metadata = new MediaMetadata({ title: item.title, artist: item.reciter, album: item.album || 'Noor Hub · Quran' }); navigator.mediaSession.setActionHandler('play', () => audio.play()); navigator.mediaSession.setActionHandler('pause', () => audio.pause()); }
   }, [getAudio]);
   const play = useCallback((items, start = 0, repeat = 'off', range = null) => {
     queueRef.current = items;

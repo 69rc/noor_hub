@@ -41,37 +41,8 @@
   .skeleton { @apply relative overflow-hidden rounded-xl bg-emerald-100/60 dark:bg-night-soft; }
   .skeleton::after { @apply absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/5; content: ''; }
 }
-.taj-madd { color: #1d4ed8; }
-.taj-ghunnah { color: #047857; }
-.taj-ikhfa { color: #6d28d9; }
-.taj-idgham { color: #0f766e; }
-.taj-iqlab { color: #c2410c; }
-.taj-izhar { color: #475569; }
-.taj-qalqalah { color: #b91c1c; }
-.taj-lam { color: #a16207; }
-.dark .taj-madd { color: #93c5fd; }
-.dark .taj-ghunnah { color: #6ee7b7; }
-.dark .taj-ikhfa { color: #c4b5fd; }
-.dark .taj-idgham { color: #5eead4; }
-.dark .taj-iqlab { color: #fdba74; }
-.dark .taj-izhar { color: #cbd5e1; }
-.dark .taj-qalqalah { color: #fca5a5; }
-.dark .taj-lam { color: #fcd34d; }
-.taj-live { border-radius: .18em; background: rgb(23 75 58 / .12); box-shadow: 0 0 0 .1em rgb(23 75 58 / .12); }
-.dark .taj-live { background: rgb(255 255 255 / .14); box-shadow: 0 0 0 .1em rgb(255 255 255 / .14); }
-.taj-anim { --taj-glow: rgb(23 75 58 / .18); border-radius: .18em; animation: taj-glow 1.8s ease-in-out infinite; }
-.dark .taj-anim { --taj-glow: rgb(255 255 255 / .22); }
-@keyframes taj-glow {
-  0%, 100% { background-color: transparent; box-shadow: 0 0 0 0 transparent; }
-  50% { background-color: var(--taj-glow); box-shadow: 0 0 0 .14em var(--taj-glow); }
-}
-.taj-now { --taj-ring: rgb(202 138 4 / .30); border-radius: .18em; background-color: var(--taj-ring); box-shadow: 0 0 0 .1em var(--taj-ring); }
-.dark .taj-now { --taj-ring: rgb(250 204 21 / .28); }
-.taj-now-pulse { animation: taj-ring 1.3s ease-in-out infinite; }
-@keyframes taj-ring {
-  0%, 100% { box-shadow: 0 0 0 .1em var(--taj-ring); }
-  50% { box-shadow: 0 0 0 .26em var(--taj-ring); }
-}
+.word-now { --word-ring: rgb(202 138 4 / .30); border-radius: .18em; background-color: var(--word-ring); box-shadow: 0 0 0 .1em var(--word-ring); }
+.dark .word-now { --word-ring: rgb(250 204 21 / .28); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }

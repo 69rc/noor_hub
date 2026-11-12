@@ -5,7 +5,7 @@ const BASE = process.env.QA_BASE || 'http://localhost:5173';
 const OUT = '/tmp/sakinah-qa';
 fs.mkdirSync(OUT, { recursive: true });
 
-const ROUTES = ['/', '/prayers', '/prayers?view=qibla', '/quran', '/quran/1', '/learn', '/hadith', '/worship', '/worship?tab=tasbih', '/worship?tab=adhkar', '/worship?tab=tahajjud', '/journal', '/library', '/assistant', '/profile', '/profile/sources', '/welcome'];
+const ROUTES = ['/', '/prayers', '/prayers?view=qibla', '/quran', '/quran/1', '/learn', '/hadith', '/worship', '/worship?tab=tasbih', '/worship?tab=adhkar', '/worship?tab=hisn', '/worship?tab=hisn&chapter=27', '/worship?tab=tahajjud', '/journal', '/library', '/assistant', '/profile', '/profile/sources', '/welcome'];
 const report = [];
 const fail = (view, route, check, detail) => report.push({ view, route, check, ok: false, detail });
 const pass = (view, route, check) => report.push({ view, route, check, ok: true });
@@ -137,20 +137,40 @@ async function interactions() {
     await page.getByText(/1 night in a row/).waitFor();
   });
 
-  await step('quran tajweed colours render and toggle off', async () => {
+  await step('quran reader is plain arabic without tajweed marks', async () => {
     await page.goto(BASE + '/quran/1', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1800);
-    const coloured = page.locator('[class^="taj-"]');
-    if ((await coloured.count()) < 1) throw new Error('no tajweed-coloured letters rendered');
-    await page.screenshot({ path: `${OUT}/flow-quran-tajweed.png` });
-    await page.getByRole('button', { name: 'Tajweed', exact: true }).click();
-    await page.waitForTimeout(300);
-    if ((await coloured.count()) !== 0) throw new Error('tajweed colours still present after disabling');
-    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('sakinah.preferences') || '{}').tajweed);
-    if (stored !== false) throw new Error('tajweed preference not persisted off');
-    await page.getByRole('button', { name: 'Tajweed', exact: true }).click();
-    await page.waitForTimeout(300);
-    if ((await coloured.count()) < 1) throw new Error('tajweed colours did not return after re-enabling');
+    if ((await page.locator('[class*="taj-"]').count()) !== 0) throw new Error('tajweed classes still rendered');
+    if ((await page.getByRole('button', { name: 'Tajweed', exact: true }).count()) !== 0) throw new Error('tajweed toggle still present');
+    await page.screenshot({ path: `${OUT}/flow-quran-plain.png` });
+  });
+
+  await step('hifz marking, tracker and spaced review', async () => {
+    await page.getByRole('button', { name: 'Mark ayah 1 as memorized' }).click();
+    await page.getByRole('button', { name: 'Remove ayah 1 from memorization' }).waitFor();
+    const entry = await page.evaluate(() => JSON.parse(localStorage.getItem('sakinah.hifz') || '{}')['1:1']);
+    if (!entry || entry.interval !== 1) throw new Error('hifz entry not created with interval 1');
+    await page.goto(BASE + '/quran', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('tab', { name: 'Hifz' }).click();
+    await page.getByText('Memorized ayahs').waitFor();
+    await page.evaluate(() => {
+      const state = JSON.parse(localStorage.getItem('sakinah.hifz') || '{}');
+      const d = new Date();
+      state['1:1'].due = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      localStorage.setItem('sakinah.hifz', JSON.stringify(state));
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('tab', { name: 'Hifz' }).click();
+    await page.getByRole('button', { name: 'Start review' }).click();
+    await page.getByText('Review 1 of 1').waitFor();
+    await page.getByRole('button', { name: 'Recite from memory, then reveal' }).click();
+    await page.getByRole('button', { name: /Good/ }).click();
+    await page.waitForTimeout(400);
+    const graded = await page.evaluate(() => JSON.parse(localStorage.getItem('sakinah.hifz') || '{}')['1:1']);
+    if (graded.interval !== 3 || graded.reviews !== 1) throw new Error(`review not graded: ${JSON.stringify(graded)}`);
+    await page.screenshot({ path: `${OUT}/flow-hifz.png` });
+    await page.goto(BASE + '/quran/1', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1200);
   });
 
   await step('reciter change persists and updates the reader', async () => {
@@ -191,6 +211,40 @@ async function interactions() {
       await page.screenshot({ path: `${OUT}/flow-audio-saved.png` });
     } finally {
       await page.unroute('https://everyayah.com/**');
+    }
+  });
+
+  await step('study modal quotes attributed tafsir and caches it', async () => {
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await page.route('https://ummahapi.com/**', route => {
+      const arabic = route.request().url().includes('/muyassar/');
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, service: 'tafsir-ayah', data: { verse_key: '1:1', tafsir: arabic ? { key: 'muyassar', name: 'Tafsir Muyassar', language: 'arabic', author: 'Ministry of Islamic Affairs, Saudi Arabia', text: 'QA-TAFSIR Arabic commentary.' } : { key: 'ibn_kathir', name: 'Ibn Kathir (Abridged)', language: 'english', author: 'Hafiz Ibn Kathir', text: 'QA-TAFSIR English commentary.' } } })
+      });
+    });
+    try {
+      await page.getByRole('button', { name: /Study this verse/ }).first().click();
+      await page.getByText('QA-TAFSIR English commentary.').waitFor({ timeout: 15000 });
+      await page.getByText('Ibn Kathir (Abridged) · Hafiz Ibn Kathir').waitFor();
+      await page.screenshot({ path: `${OUT}/flow-study-tafsir.png` });
+      await page.getByLabel('Commentary edition').selectOption('muyassar');
+      await page.getByText('QA-TAFSIR Arabic commentary.').waitFor({ timeout: 15000 });
+      const stored = await page.evaluate(() => new Promise((resolve, reject) => {
+        const req = indexedDB.open('sakinah-offline');
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => {
+          const db = req.result;
+          const get = db.transaction('content', 'readonly').objectStore('content').get('tafsir:muyassar:1:1');
+          get.onsuccess = () => { db.close(); resolve(get.result?.value?.text || ''); };
+          get.onerror = () => { db.close(); reject(get.error); };
+        };
+      }));
+      if (!stored.includes('QA-TAFSIR Arabic')) throw new Error('tafsir not cached in IndexedDB');
+    } finally {
+      await page.unroute('https://ummahapi.com/**');
     }
   });
 

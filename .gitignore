@@ -8,5 +8,3 @@ playwright-report/
 test-results/
 .DS_Store
 *.log
-apps/web/public/icons/*.png
-apps/web/public/images/*.png

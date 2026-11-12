@@ -1,7 +1,7 @@
 export const DEFAULT_PREFERENCES = {
   theme: 'light', language: 'en', name: '', onboarded: false,
   location: { label: 'Makkah, Saudi Arabia', country: 'SA', latitude: 21.4225, longitude: 39.8262, timezone: 'Asia/Riyadh', manual: true },
-  method: 'UmmAlQura', asr: 'standard', translation: 'en.sahih', reciter: 'alafasy', tajweed: true, tajweedAnimation: true, learningLevel: 'beginner',
+  method: 'UmmAlQura', asr: 'standard', translation: 'en.sahih', reciter: 'alafasy', learningLevel: 'beginner',
   notifications: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false, morning: false, evening: false, quran: false, tahajjud: false, learning: false, lead: 0 },
   widgets: ['prayer', 'quran', 'dhikr', 'learning', 'hadith', 'verse', 'tahajjud'], haptics: true, quranGoal: 5, dhikrGoal: 33
 };

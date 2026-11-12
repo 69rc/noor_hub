@@ -1,12 +1,63 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, BookOpen, Check, ChevronRight, Clock3, GraduationCap, Layers3, Sparkles, Trophy } from 'lucide-react';
-import { COURSES, LESSONS, ACADEMY_SOURCES } from '../../data/academy';
-import { useLocalState } from '../../lib/hooks';
-import { usePreferences } from '../../lib/preferences';
-import { Badge, ProgressRing, SectionHeading, Tabs } from '../../components/ui';
+import { lazy, Suspense, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Award, Blocks, BookA, BookOpen, GraduationCap, Languages, LayoutGrid, Lightbulb, Map, MessageCircle, PenLine } from 'lucide-react';
+import { AcademyProvider } from './academy/store';
+import { LoadingState } from '../../components/ui';
+
+const Overview = lazy(() => import('./academy/Overview'));
+const Path = lazy(() => import('./academy/Path'));
+const Alphabet = lazy(() => import('./academy/Alphabet'));
+const Harakat = lazy(() => import('./academy/Harakat'));
+const Builder = lazy(() => import('./academy/Builder'));
+const Tajweed = lazy(() => import('./academy/Tajweed'));
+const Reading = lazy(() => import('./academy/Reading'));
+const HifzTrainer = lazy(() => import('./academy/HifzTrainer'));
+const Vocabulary = lazy(() => import('./academy/Vocabulary'));
+const Understanding = lazy(() => import('./academy/Understanding'));
+const Assistant = lazy(() => import('./academy/Assistant'));
+
+export const ACADEMY_TABS = [
+  { value: 'overview', label: 'Overview', icon: LayoutGrid, view: Overview },
+  { value: 'path', label: 'My Learning Path', icon: Map, view: Path },
+  { value: 'alphabet', label: 'Arabic Alphabet', icon: Languages, view: Alphabet },
+  { value: 'harakat', label: 'Harakat', icon: PenLine, view: Harakat },
+  { value: 'builder', label: 'Word Builder', icon: Blocks, view: Builder },
+  { value: 'tajweed', label: 'Tajweed', icon: Award, view: Tajweed },
+  { value: 'reading', label: 'Quran Reading', icon: BookOpen, view: Reading },
+  { value: 'hifz', label: 'Hifz', icon: GraduationCap, view: HifzTrainer },
+  { value: 'vocab', label: 'Vocabulary', icon: BookA, view: Vocabulary },
+  { value: 'understanding', label: 'Understanding', icon: Lightbulb, view: Understanding },
+  { value: 'assistant', label: 'Learning Assistant', icon: MessageCircle, view: Assistant },
+];
+
+function Shell() {
+  const [params, setParams] = useSearchParams();
+  const navRef = useRef(null);
+  const current = ACADEMY_TABS.some(t => t.value === params.get('tab')) ? params.get('tab') : 'overview';
+  const View = ACADEMY_TABS.find(t => t.value === current).view;
+  useEffect(() => { navRef.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); }, [current]);
+  return (
+    <div className="page">
+      <div className="mb-5">
+        <p className="eyebrow muted mb-2">Quran Learning Academy</p>
+        <h1 className="page-title">From your first letter<br />to independent reading.</h1>
+        <p className="muted mt-3 max-w-md text-sm leading-relaxed">Eight connected modules, one gentle path. Your progress saves itself — keep going at your own pace.</p>
+      </div>
+      <nav ref={navRef} aria-label="Academy sections" className="-mx-1 mb-6 flex gap-2 overflow-x-auto px-1 pb-2">
+        {ACADEMY_TABS.map(tab => (
+          <button key={tab.value} onClick={() => setParams({ tab: tab.value }, { replace: true })} aria-current={current === tab.value ? 'page' : undefined}
+            className={`flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-xs font-extrabold transition ${current === tab.value ? 'bg-emerald-800 text-white shadow-soft dark:bg-emerald-700' : 'soft muted hover:text-emerald-700'}`}>
+            <tab.icon size={15} strokeWidth={2.2} />{tab.label}
+          </button>
+        ))}
+      </nav>
+      <Suspense fallback={<LoadingState label="Preparing this module…" />}>
+        <View />
+      </Suspense>
+    </div>
+  );
+}
+
 export default function Learn() {
-  const { preferences } = usePreferences(); const [level, setLevel] = useState(preferences.learningLevel); const [progress] = useLocalState('sakinah.learning', {}); const completed = Object.values(progress).filter(Boolean).length; const total = Object.keys(LESSONS).length;
-  const next = COURSES.flatMap(c => c.lessons).find(id => !progress[id]);
-  return <div className="page"><div className="mb-6 flex items-start justify-between"><div><p className="eyebrow muted mb-2">Arabic Academy</p><h1 className="page-title">Understand more.<br />Feel closer.</h1><p className="muted mt-3 max-w-md text-sm leading-relaxed">From your first letter to the language of the Quran. A thoughtful path, one lesson at a time.</p></div><div className="hidden rounded-3xl bg-sage-100 p-5 text-sage-800 sm:block"><GraduationCap size={36} strokeWidth={1.3} /></div></div><section className="relative mb-7 overflow-hidden rounded-3xl bg-emerald-800 p-6 text-white"><div className="geometric absolute inset-0 opacity-60" /><div className="relative flex items-center gap-5"><ProgressRing value={completed / total} size={74} stroke={5}><span className="text-lg font-extrabold">{completed}<span className="text-xs text-emerald-200">/{total}</span></span></ProgressRing><div className="flex-1"><p className="eyebrow mb-1 text-sage-200">Your learning journey</p><h2 className="text-lg font-extrabold">{completed ? 'Look how far you’ve come.' : 'Every journey starts with a letter.'}</h2><p className="mt-1 text-xs text-emerald-100">{completed ? `${completed} lessons completed. Keep going at your own pace.` : 'A few mindful minutes today can open a new world.'}</p></div></div>{next && <Link to={`/learn/${next}`} className="relative mt-5 flex min-h-12 items-center justify-between rounded-xl bg-sage-100 px-4 text-xs font-extrabold text-emerald-900">{completed ? 'Continue' : 'Begin'}: {LESSONS[next].title}<ArrowRight size={17} /></Link>}</section><Tabs className="mb-6" value={level} onChange={setLevel} items={[{ value: 'beginner', label: 'Beginner' }, { value: 'intermediate', label: 'Intermediate' }, { value: 'advanced', label: 'Advanced' }]} /><div role="tabpanel" className="grid gap-5 md:grid-cols-2">{COURSES.filter(c => c.level === level).map(course => { const done = course.lessons.filter(id => progress[id]).length; return <section key={course.id} className="surface overflow-hidden"><div className={`relative flex h-36 items-center justify-center overflow-hidden ${course.color === 'sage' ? 'bg-sage-100 dark:bg-sage-900/40' : course.color === 'gold' ? 'bg-gold-50 dark:bg-gold-900/30' : 'bg-emerald-50 dark:bg-emerald-900/40'}`}><div className="absolute h-44 w-44 rounded-full border-[24px] border-white/30 dark:border-white/5" /><p className="arabic relative text-6xl tracking-wider text-emerald-800 dark:text-sage-200">{course.arabic}</p><Badge className="absolute left-4 top-4 bg-white/60 text-emerald-800">{course.lessons.length} lessons</Badge></div><div className="p-5"><h2 className="text-lg font-extrabold">{course.title}</h2><p className="muted mt-1 text-xs leading-relaxed">{course.subtitle}</p><div className="my-4 h-1.5 overflow-hidden rounded-full soft"><div className="h-full rounded-full bg-emerald-600" style={{ width: `${done / course.lessons.length * 100}%` }} /></div><div className="divide-y divide-[var(--line)]">{course.lessons.map((id, index) => <Link key={id} to={`/learn/${id}`} className="group flex min-h-16 items-center gap-3 py-3"><span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ${progress[id] ? 'bg-emerald-600 text-white' : 'soft muted'}`}>{progress[id] ? <Check size={14} /> : index + 1}</span><div className="flex-1"><p className="text-xs font-bold">{LESSONS[id].title}</p><p className="muted mt-1 flex items-center gap-1 text-[9px]"><Clock3 size={10} />{LESSONS[id].minutes} min · lesson & quiz</p></div><ChevronRight size={15} className="muted transition group-hover:translate-x-1" /></Link>)}</div></div></section>; })}<div className="space-y-5"><section className="surface p-5"><div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-gold-50 text-gold-600 dark:bg-gold-900/30"><BookOpen size={22} /></div><h2 className="section-title">Learn with real sources</h2><p className="muted mt-2 text-xs leading-relaxed">These lessons introduce Arabic language concepts. For pronunciation and deeper study, learn with a qualified teacher and the resources below.</p><div className="mt-5 space-y-3">{ACADEMY_SOURCES.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="soft flex items-center justify-between gap-3 rounded-xl p-4 text-xs font-bold">{source.title}<ArrowUpRight size={16} className="shrink-0" /></a>)}</div></section><section className="rounded-3xl bg-gold-50 p-5 dark:bg-gold-900/20"><Sparkles size={22} className="mb-3 text-gold-600" /><h3 className="text-sm font-extrabold">A small practice, often</h3><p className="muted mt-2 text-xs leading-relaxed">Try one lesson, revisit its letters tomorrow, and use the quiz to check what stayed with you. There’s no penalty for taking your time.</p></section></div></div></div>;
+  return <AcademyProvider><Shell /></AcademyProvider>;
 }

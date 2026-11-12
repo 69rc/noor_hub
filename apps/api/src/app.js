@@ -12,6 +12,7 @@ import { accountRouter } from './modules/account.js';
 import { syncRouter } from './modules/sync.js';
 import { contentRouter } from './modules/content.js';
 import { assistantRouter } from './modules/assistant.js';
+import { learnRouter } from './modules/learn.js';
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
@@ -31,6 +32,7 @@ export function createApp() {
   app.use('/api/v1/sync', syncRouter);
   app.use('/api/v1/content', contentRouter);
   app.use('/api/v1/assistant', assistantRouter);
+  app.use('/api/v1/learn', learnRouter);
   app.use('/api', (req, res, next) => next(new ApiError(404, 'NOT_FOUND', 'Endpoint not found.')));
   app.use(errorHandler);
   return app;
